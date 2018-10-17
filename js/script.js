@@ -33,6 +33,21 @@ var weather = (function () {
 		}
 	};
 
+	//
+	// Methods
+	//
+
+	/**
+	 * Sanitize and encode all HTML in a user-submitted string
+	 * @param  {String} str  The user-submitted string
+	 * @return {String} str  The sanitized string
+	 */
+	var sanitizeHTML = function (str) {
+		var temp = document.createElement('div');
+		temp.textContent = str;
+		return temp.innerHTML;
+	};
+
 	// Merge two or more objects together
 	var extend = function () {
 
@@ -84,23 +99,30 @@ var weather = (function () {
 		var content = '';
 
 		if (settings.showWeatherIcon) {
-			content += '<img src="https://www.weatherbit.io/static/img/icons/' + data.weather.icon + '.png" alt="Weather Icon">';
+			content += '<img src="https://www.weatherbit.io/static/img/icons/' + sanitizeHTML(data.weather.icon) + '.png" alt="Weather Icon">';
 		}
 
-		var degree = data.temp + '&deg;' + settings.temperatureUnits;
-		content += '<div>' + settings.weatherMessage(degree, data.weather.description, data.city_name) + '</div>';
+		var degree = sanitizeHTML(data.temp) + '&deg;' + settings.temperatureUnits;
+		content += '<div>' + settings.weatherMessage(degree, sanitizeHTML(data.weather.description), sanitizeHTML(data.city_name)) + '</div>';
 
 		app.innerHTML = content;
 	};
 
-	// Get user city location
-	var getLocation = function () {
+	var makeRequest = function () {
+
+		// Set up our HTTP request
 		var xhr = new XMLHttpRequest();
 
+		// Set up our listener to process request state changes
 		xhr.onreadystatechange = function () {
+
+			// Only run if the request is complete
 			if (xhr.readyState !== 4) return;
 
+			// Process our return data
 			if (xhr.status >= 200 && xhr.status <= 300) {
+
+				// Get user city location and pass it into weather conditions request
 				getWeatherCondition(JSON.parse(xhr.responseText).city);
 			} else {
 				renderFailMessage();
@@ -112,14 +134,23 @@ var weather = (function () {
 	};
 
 	var getWeatherCondition = function (location) {
+		// Set up parameters for the request URL
 		var unit = settings.temperatureUnits === 'C' ? 'M' : 'I';
 		var url = 'https://api.weatherbit.io/v2.0/current?city=' + location + '&key=' + settings.apiKey + '&units=' + unit;
+
+		// Set up our HTTP Request
 		var xhr = new XMLHttpRequest();
 
+		// Set up our listener to process request state changes
 		xhr.onreadystatechange = function () {
+
+			// Only run if the request is complete
 			if (xhr.readyState !== 4) return;
 
+			// Process our return data
 			if (xhr.status >= 200 && xhr.status <= 300) {
+
+				// Render the weather condition
 				renderWeather(JSON.parse(xhr.responseText).data[0]);
 			} else {
 				renderFailMessage();
@@ -131,7 +162,7 @@ var weather = (function () {
 
 	publicAPIs.init = function (options) {
 		settings = extend(defaults, options || {});
-		getLocation();
+		makeRequest();
 	};
 
 	return publicAPIs;
